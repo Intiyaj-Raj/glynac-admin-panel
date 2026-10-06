@@ -1,6 +1,4 @@
 "use client";
-
-// Simple toggle switch component used for feature flags and rule active status
 export default function Toggle({
   checked,
   onChange,

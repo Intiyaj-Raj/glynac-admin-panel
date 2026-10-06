@@ -1,4 +1,3 @@
-// Simple page header shown at the top of each page
 export default function PageHeader({
   title,
   subtitle,

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-// Reusable mobile menu toggle - shows nav links in a dropdown on small screens
 export default function MobileHeader({
   navItems,
 }: {
@@ -18,7 +17,12 @@ export default function MobileHeader({
         className="p-2 rounded-lg hover:bg-slate-800"
         aria-label="Toggle menu"
       >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"

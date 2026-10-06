@@ -1,6 +1,5 @@
 import type { UserStatus, Severity, SystemStatus } from "@/types";
 
-// Color-coded badge for user status (Active/Pending/Suspended)
 export function StatusBadge({ status }: { status: UserStatus }) {
   const colors: Record<UserStatus, string> = {
     Active: "bg-green-100 text-green-700",
@@ -9,13 +8,14 @@ export function StatusBadge({ status }: { status: UserStatus }) {
   };
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[status]}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[status]}`}
+    >
       {status}
     </span>
   );
 }
 
-// Color-coded badge for rule severity (Low/Medium/High/Critical)
 export function SeverityBadge({ severity }: { severity: Severity }) {
   const colors: Record<Severity, string> = {
     Low: "bg-blue-100 text-blue-700",
@@ -25,13 +25,14 @@ export function SeverityBadge({ severity }: { severity: Severity }) {
   };
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[severity]}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[severity]}`}
+    >
       {severity}
     </span>
   );
 }
 
-// Color-coded badge for system service status
 export function ServiceStatusBadge({ status }: { status: SystemStatus }) {
   const colors: Record<SystemStatus, string> = {
     Operational: "bg-green-100 text-green-700",
@@ -40,13 +41,14 @@ export function ServiceStatusBadge({ status }: { status: SystemStatus }) {
   };
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[status]}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[status]}`}
+    >
       {status}
     </span>
   );
 }
 
-// Badge for log entry type (info/warning/error)
 export function LogTypeBadge({ type }: { type: "info" | "warning" | "error" }) {
   const colors = {
     info: "bg-blue-100 text-blue-700",
@@ -55,7 +57,9 @@ export function LogTypeBadge({ type }: { type: "info" | "warning" | "error" }) {
   };
 
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colors[type]}`}>
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colors[type]}`}
+    >
       {type}
     </span>
   );

@@ -1,4 +1,44 @@
 "use client";
-import PageHeader from "@/components/PageHeader"; import { summaryMetrics } from "@/data/mockData";
-function Card({label,value}:{label:string;value:string|number}){return <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200"><p className="text-sm text-slate-500">{label}</p><p className="text-2xl font-bold text-slate-900 mt-1">{value}</p></div>}
-export default function DashboardPage(){return <div><PageHeader title="Analytics Dashboard" subtitle="Platform-wide compliance metrics and review trends"/><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"><Card label="Total Documents Reviewed" value={summaryMetrics.totalDocumentsReviewed.toLocaleString()}/><Card label="Compliance Violations Flagged" value={summaryMetrics.complianceViolationsFlagged}/><Card label="Pass Rate" value={`${summaryMetrics.passRate}%`}/><Card label="Average Review Time" value={summaryMetrics.averageReviewTime}/></div><div className="mt-6 bg-white rounded-xl p-6 border border-slate-200"><h3 className="font-semibold text-slate-900">Dashboard metrics are now visible</h3><p className="text-sm text-slate-500 mt-1">Charts will be added in the next UI step.</p></div></div>}
+import PageHeader from "@/components/PageHeader";
+import { summaryMetrics } from "@/data/mockData";
+function Card({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+      <p className="text-sm text-slate-500">{label}</p>
+      <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
+    </div>
+  );
+}
+export default function DashboardPage() {
+  return (
+    <div>
+      <PageHeader
+        title="Analytics Dashboard"
+        subtitle="Platform-wide compliance metrics and review trends"
+      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card
+          label="Total Documents Reviewed"
+          value={summaryMetrics.totalDocumentsReviewed.toLocaleString()}
+        />
+        <Card
+          label="Compliance Violations Flagged"
+          value={summaryMetrics.complianceViolationsFlagged}
+        />
+        <Card label="Pass Rate" value={`${summaryMetrics.passRate}%`} />
+        <Card
+          label="Average Review Time"
+          value={summaryMetrics.averageReviewTime}
+        />
+      </div>
+      <div className="mt-6 bg-white rounded-xl p-6 border border-slate-200">
+        <h3 className="font-semibold text-slate-900">
+          Dashboard metrics are now visible
+        </h3>
+        <p className="text-sm text-slate-500 mt-1">
+          Charts will be added in the next UI step.
+        </p>
+      </div>
+    </div>
+  );
+}
