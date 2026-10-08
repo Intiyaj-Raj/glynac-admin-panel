@@ -23,7 +23,7 @@ const navItems = [
   {
     label: "System Health",
     href: "/system",
-    icon: "M3 12h4l3-9 4 18 3-9h4",
+    icon: "",
   },
   {
     label: "Feature Flags",
