@@ -1,5 +1,6 @@
 import type { UserStatus, Severity, SystemStatus } from "@/types";
 
+// Color-coded badge for user status (Active/Pending/Suspended)
 export function StatusBadge({ status }: { status: UserStatus }) {
   const colors: Record<UserStatus, string> = {
     Active: "bg-green-100 text-green-700",
@@ -16,6 +17,7 @@ export function StatusBadge({ status }: { status: UserStatus }) {
   );
 }
 
+// Color-coded badge for rule severity (Low/Medium/High/Critical)
 export function SeverityBadge({ severity }: { severity: Severity }) {
   const colors: Record<Severity, string> = {
     Low: "bg-blue-100 text-blue-700",
@@ -33,6 +35,7 @@ export function SeverityBadge({ severity }: { severity: Severity }) {
   );
 }
 
+// Color-coded badge for system service status
 export function ServiceStatusBadge({ status }: { status: SystemStatus }) {
   const colors: Record<SystemStatus, string> = {
     Operational: "bg-green-100 text-green-700",
@@ -49,6 +52,7 @@ export function ServiceStatusBadge({ status }: { status: SystemStatus }) {
   );
 }
 
+// Badge for log entry type (info/warning/error)
 export function LogTypeBadge({ type }: { type: "info" | "warning" | "error" }) {
   const colors = {
     info: "bg-blue-100 text-blue-700",

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+// Reusable mobile menu toggle - shows nav links in a dropdown on small screens
 export default function MobileHeader({
   navItems,
 }: {

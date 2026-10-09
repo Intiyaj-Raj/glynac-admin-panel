@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+// Reusable modal component with backdrop, handles Escape key to close
 export default function Modal({
   open,
   onClose,
@@ -13,6 +14,7 @@ export default function Modal({
   title: string;
   children: React.ReactNode;
 }) {
+  // Close modal when Escape key is pressed
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
