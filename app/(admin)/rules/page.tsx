@@ -148,6 +148,7 @@ export default function RulesPage() {
                         checked={rule.active}
                         onChange={() => toggleRuleActive(rule.id)}
                         label={`Toggle ${rule.name}`}
+                        showStatus
                       />
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -298,8 +299,15 @@ function RuleEditModal({
 
         {/* Active toggle */}
         <div className="flex items-center gap-3 pt-2">
-          <Toggle checked={active} onChange={setActive} label="Active" />
-          <span className="text-sm text-slate-700">Rule is active</span>
+          <Toggle
+            checked={active}
+            onChange={setActive}
+            label="Active"
+            showStatus
+          />
+          <span className="text-sm text-slate-700">
+            {active ? "Rule is enforced" : "Rule is not enforced"}
+          </span>
         </div>
       </div>
 

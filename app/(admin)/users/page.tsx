@@ -16,7 +16,33 @@ const ALL_ROLES: UserRole[] = [
 const ALL_PERMISSIONS: Permission[] = ["Read", "Write", "Approve", "Admin"];
 const ROWS_PER_PAGE = 8;
 
-type SortField = "name" | "role" | "status";
+type SortField = "name" | "email" | "role" | "status";
+
+// Sort indicator: stacked up/down arrows on every sortable column;
+// the active direction is highlighted, the other one is dimmed.
+function SortIcon({ active, asc }: { active: boolean; asc: boolean }) {
+  return (
+    <span
+      className="inline-flex flex-col ml-1.5 align-middle leading-none"
+      aria-hidden="true"
+    >
+      <svg
+        className={`w-3 h-3 -mb-0.5 ${active && asc ? "text-primary-600" : "text-slate-300"}`}
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path d="M10 5l5 6H5l5-6z" />
+      </svg>
+      <svg
+        className={`w-3 h-3 -mt-0.5 ${active && !asc ? "text-primary-600" : "text-slate-300"}`}
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path d="M10 15l-5-6h10l-5 6z" />
+      </svg>
+    </span>
+  );
+}
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>(mockUsers);
@@ -152,25 +178,92 @@ export default function UsersPage() {
             <thead className="bg-slate-50 text-slate-600">
               <tr>
                 <th
-                  className="text-left px-4 py-3 font-medium cursor-pointer hover:bg-slate-100"
-                  onClick={() => handleSort("name")}
+                  className="text-left px-4 py-3 font-medium"
+                  aria-sort={
+                    sortField === "name"
+                      ? sortAsc
+                        ? "ascending"
+                        : "descending"
+                      : "none"
+                  }
                 >
-                  Name {sortField === "name" && (sortAsc ? "▲" : "▼")}
-                </th>
-                <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">
-                  Email
+                  <button
+                    type="button"
+                    onClick={() => handleSort("name")}
+                    title="Sort by name"
+                    className={`inline-flex items-center rounded px-1 -mx-1 py-0.5 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
+                      sortField === "name" ? "text-slate-900" : ""
+                    }`}
+                  >
+                    Name
+                    <SortIcon active={sortField === "name"} asc={sortAsc} />
+                  </button>
                 </th>
                 <th
-                  className="text-left px-4 py-3 font-medium cursor-pointer hover:bg-slate-100"
-                  onClick={() => handleSort("role")}
+                  className="text-left px-4 py-3 font-medium hidden sm:table-cell"
+                  aria-sort={
+                    sortField === "email"
+                      ? sortAsc
+                        ? "ascending"
+                        : "descending"
+                      : "none"
+                  }
                 >
-                  Role {sortField === "role" && (sortAsc ? "▲" : "▼")}
+                  <button
+                    type="button"
+                    onClick={() => handleSort("email")}
+                    title="Sort by email"
+                    className={`inline-flex items-center rounded px-1 -mx-1 py-0.5 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
+                      sortField === "email" ? "text-slate-900" : ""
+                    }`}
+                  >
+                    Email
+                    <SortIcon active={sortField === "email"} asc={sortAsc} />
+                  </button>
                 </th>
                 <th
-                  className="text-left px-4 py-3 font-medium cursor-pointer hover:bg-slate-100"
-                  onClick={() => handleSort("status")}
+                  className="text-left px-4 py-3 font-medium"
+                  aria-sort={
+                    sortField === "role"
+                      ? sortAsc
+                        ? "ascending"
+                        : "descending"
+                      : "none"
+                  }
                 >
-                  Status {sortField === "status" && (sortAsc ? "▲" : "▼")}
+                  <button
+                    type="button"
+                    onClick={() => handleSort("role")}
+                    title="Sort by role"
+                    className={`inline-flex items-center rounded px-1 -mx-1 py-0.5 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
+                      sortField === "role" ? "text-slate-900" : ""
+                    }`}
+                  >
+                    Role
+                    <SortIcon active={sortField === "role"} asc={sortAsc} />
+                  </button>
+                </th>
+                <th
+                  className="text-left px-4 py-3 font-medium"
+                  aria-sort={
+                    sortField === "status"
+                      ? sortAsc
+                        ? "ascending"
+                        : "descending"
+                      : "none"
+                  }
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleSort("status")}
+                    title="Sort by status"
+                    className={`inline-flex items-center rounded px-1 -mx-1 py-0.5 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
+                      sortField === "status" ? "text-slate-900" : ""
+                    }`}
+                  >
+                    Status
+                    <SortIcon active={sortField === "status"} asc={sortAsc} />
+                  </button>
                 </th>
                 <th className="text-left px-4 py-3 font-medium hidden md:table-cell">
                   Last Active
