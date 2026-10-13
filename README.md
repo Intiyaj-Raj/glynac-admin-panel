@@ -17,7 +17,6 @@ All data is mock/local state — no backend or database is connected.
 ## Features
 
 ### 1. Executive Metrics & Analytics Dashboard
-
 - Four metric summary cards (Total Documents Reviewed, Compliance Violations Flagged, Pass Rate, Average Review Time)
 - Interactive area chart showing review trends over 10 months
 - Pie chart showing violation distribution by rule category, with an **eye icon button** to show/hide slice labels (a legend appears automatically when labels are hidden)
@@ -25,7 +24,6 @@ All data is mock/local state — no backend or database is connected.
 - Built with Recharts
 
 ### 2. User & Role-Based Access Control (RBAC) Management
-
 - Searchable user table with pagination (8 rows per page)
 - Sorting by **Name, Email, Role, and Status** (click column headers). Every sortable column shows up/down arrow indicators; the active direction is highlighted and exposed via `aria-sort`
 - Filter by role and status using dropdowns
@@ -34,7 +32,6 @@ All data is mock/local state — no backend or database is connected.
 - Changes persist in local React state
 
 ### 3. Compliance Rule Policy Manager
-
 - Rule management table listing active platform rules (FINRA-2210, SEC-17a-4, DISC-09, etc.)
 - Toggle rule active/inactive status with clear-state switches (green track + check/cross icon + "Active"/"Inactive" text label)
 - Edit rule severity (Low, Medium, High, Critical) via edit modal
@@ -43,7 +40,6 @@ All data is mock/local state — no backend or database is connected.
 - Consistent severity badges: one accent hue that increases in intensity from Low to Critical, plus a 4-step level meter (not color-only)
 
 ### 4. System Health & Activity Log Monitor
-
 - System health summary cards (services operational, degraded count, avg latency, error rate)
 - Service health table showing API latency, database status, and uptime
 - Visual health bars for each service
@@ -51,7 +47,6 @@ All data is mock/local state — no backend or database is connected.
 - Color-coded log type indicators
 
 ### 5. Feature Flag & Configuration Toggles
-
 - Toggle switches for feature flags (Enable AI Substring Validation, Enable Presidio PII Masking, Enable Precedent Lookup, etc.)
 - Summary cards showing total/enabled/disabled counts
 - Search and category filter
@@ -130,14 +125,12 @@ npm start
 ## Main Functionality
 
 ### Dashboard (`/`)
-
 - View 4 metric summary cards with trend indicators
 - Interactive area chart (reviewed vs flagged documents over time)
 - Pie chart (violation distribution by category) — click the eye icon in the card header to hide/show labels
 - Bar chart (monthly review volume)
 
 ### User Management (`/users`)
-
 - Search users by name or email
 - Filter by role (Admin, Compliance Officer, Advisor, Auditor) and status
 - Sort by clicking column headers (name, email, role, status); arrows on every sortable column show the current sort direction
@@ -147,7 +140,6 @@ npm start
 - Paginate through users (8 per page)
 
 ### Policy Manager (`/rules`)
-
 - Search rules by name, ID, or category
 - Toggle rule active/inactive with the switch; its state is shown by color, icon and the text label "Active"/"Inactive"
 - Click "Edit" to change severity, category, or description
@@ -155,14 +147,12 @@ npm start
 - Severity options: Low, Medium, High, Critical
 
 ### System Health (`/system`)
-
 - View overall health summary (operational/degraded counts, avg latency, error rate)
 - Service health table with latency, uptime, and visual health bars
 - Activity log stream with search, type filter, and module filter
 - Color-coded log entries (blue=info, yellow=warning, red=error)
 
 ### Feature Flags (`/flags`)
-
 - View total/enabled/disabled flag counts
 - Search flags by name or description
 - Filter by category
@@ -170,12 +160,12 @@ npm start
 
 ## UI Review Updates
 
-| Area                           | Change                                                                                                                                                                                                   |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dashboard – Pie chart          | Eye icon button in the card header toggles slice labels. When hidden, the chart becomes a donut with a color legend so categories stay identifiable.                                                     |
-| User Management                | Name, Email, Role and Status all show sort arrows (neutral when inactive, highlighted for the active direction). Headers are real buttons (keyboard accessible) with `aria-sort`. Email is now sortable. |
-| Policy Manager – Severity      | Replaced four different colors with a single-hue scale (neutral → rose, increasing intensity) and a 4-bar level meter.                                                                                   |
-| Policy Manager – Active toggle | `Toggle` has an optional `showStatus` prop: green track, check/cross icon in the knob, and an "Active"/"Inactive" label. Feature Flags keeps the original toggle.                                        |
+| Area | Change |
+|------|--------|
+| Dashboard – Pie chart | Eye icon button in the card header toggles slice labels. When hidden, the chart becomes a donut with a color legend so categories stay identifiable. |
+| User Management | Name, Email, Role and Status all show sort arrows (neutral when inactive, highlighted for the active direction). Headers are real buttons (keyboard accessible) with `aria-sort`. Email is now sortable. |
+| Policy Manager – Severity | Replaced four different colors with a single-hue scale (neutral → rose, increasing intensity) and a 4-bar level meter. |
+| Policy Manager – Active toggle | `Toggle` has an optional `showStatus` prop: green track, check/cross icon in the knob, and an "Active"/"Inactive" label. Feature Flags keeps the original toggle. |
 
 Files touched: `app/(admin)/page.tsx`, `app/(admin)/users/page.tsx`, `app/(admin)/rules/page.tsx`, `components/Badges.tsx`, `components/Toggle.tsx`.
 
