@@ -1,7 +1,7 @@
 # Glynac Enterprise Admin Panel
 
 A frontend-only enterprise admin panel for the Glynac Wealth Management & Compliance Platform. Built with **Next.js (App Router)**, **TypeScript**, and **TailwindCSS**. This is **Task 3 (FE-3)** from the Frontend Engineering Platform task roadmap.
-
+## Live Demo: https://glynac-admin-panel.vercel.app/
 ## Project Overview
 
 The Enterprise Admin Panel allows System Administrators and Compliance Directors to:
