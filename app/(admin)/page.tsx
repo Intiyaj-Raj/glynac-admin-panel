@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   AreaChart,
   Area,
@@ -17,11 +17,43 @@ import {
   Legend,
 } from "recharts";
 import PageHeader from "@/components/PageHeader";
-import {
-  summaryMetrics,
-  reviewTrendData,
-  violationDistributionData,
-} from "@/data/mockData";
+import { reviewTrendData, violationDistributionData } from "@/data/mockData";
+
+type RangeKey = "3m" | "5m" | "all";
+const RANGES: { key: RangeKey; label: string; months: number }[] = [
+  { key: "3m", label: "Last 3 months", months: 3 },
+  { key: "5m", label: "Last 5 months", months: 5 },
+  { key: "all", label: "All time (Jan–Oct)", months: reviewTrendData.length },
+];
+
+type Totals = {
+  reviewed: number;
+  flagged: number;
+  passRate: number;
+  avgMinutes: number;
+};
+
+// Aggregate months into headline numbers. `share` (0-1) narrows the flagged
+// count to a single rule category.
+function totalsFor(rows: typeof reviewTrendData, share: number): Totals {
+  const reviewed = rows.reduce((n, r) => n + r.reviewed, 0);
+  const allFlagged = rows.reduce((n, r) => n + r.flagged, 0);
+  const minutes = rows.reduce((n, r) => n + r.avgMinutes * r.reviewed, 0);
+  return {
+    reviewed,
+    flagged: Math.round(allFlagged * share),
+    passRate: reviewed ? ((reviewed - allFlagged) / reviewed) * 100 : 0,
+    avgMinutes: reviewed ? minutes / reviewed : 0,
+  };
+}
+
+// Percentage / absolute change vs. the previous period (null if no data)
+function pctChange(curr: number, prev: number | undefined): number | null {
+  if (prev === undefined || prev === 0) return null;
+  return ((curr - prev) / prev) * 100;
+}
+const fmtPct = (v: number | null) =>
+  v === null ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
 
 // Metric summary card with icon, label, value and trend indicator
 function MetricCard({
@@ -35,7 +67,7 @@ function MetricCard({
   value: string | number;
   icon: React.ReactNode;
   trend: string;
-  trendUp: boolean;
+  trendUp: boolean | null;
 }) {
   return (
     <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
@@ -45,8 +77,13 @@ function MetricCard({
         </div>
         <span
           className={`text-xs font-medium px-2 py-1 rounded-full ${
-            trendUp ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+            trendUp === null
+              ? "bg-slate-100 text-slate-500"
+              : trendUp
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
           }`}
+          title="Change vs. previous period"
         >
           {trend}
         </span>
@@ -60,6 +97,37 @@ function MetricCard({
 export default function DashboardPage() {
   // Controls whether the pie chart shows its slice labels
   const [showPieLabels, setShowPieLabels] = useState(true);
+  // Dashboard filters
+  const [range, setRange] = useState<RangeKey>("all");
+  const [category, setCategory] = useState<string>("All");
+
+  const filtersActive = range !== "all" || category !== "All";
+
+  const { rows, totals, prevTotals, pieData, trendData } = useMemo(() => {
+    const months = RANGES.find((r) => r.key === range)!.months;
+    const total = reviewTrendData.length;
+    const start = total - months;
+    const rows = reviewTrendData.slice(start);
+    const prevRows =
+      start - months >= 0 ? reviewTrendData.slice(start - months, start) : [];
+    const share =
+      category === "All"
+        ? 1
+        : (violationDistributionData.find((v) => v.name === category)?.value ??
+            0) / 100;
+    const totals = totalsFor(rows, share);
+    const prevTotals = prevRows.length ? totalsFor(prevRows, share) : undefined;
+    const flaggedAll = rows.reduce((n, r) => n + r.flagged, 0);
+    const pieData = violationDistributionData.map((v) => ({
+      ...v,
+      count: Math.round((flaggedAll * v.value) / 100),
+    }));
+    const trendData = rows.map((r) => ({
+      ...r,
+      flagged: Math.round(r.flagged * share),
+    }));
+    return { rows, totals, prevTotals, pieData, trendData };
+  }, [range, category]);
 
   return (
     <div>
@@ -68,13 +136,77 @@ export default function DashboardPage() {
         subtitle="Platform-wide compliance metrics and review trends"
       />
 
+      {/* Filters */}
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+          <div>
+            <label
+              htmlFor="range-filter"
+              className="block text-xs font-medium text-slate-500 mb-1"
+            >
+              Time range
+            </label>
+            <select
+              id="range-filter"
+              value={range}
+              onChange={(e) => setRange(e.target.value as RangeKey)}
+              className="w-full sm:w-52 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+            >
+              {RANGES.map((r) => (
+                <option key={r.key} value={r.key}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label
+              htmlFor="category-filter"
+              className="block text-xs font-medium text-slate-500 mb-1"
+            >
+              Rule category
+            </label>
+            <select
+              id="category-filter"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full sm:w-52 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+            >
+              <option value="All">All categories</option>
+              {violationDistributionData.map((v) => (
+                <option key={v.name} value={v.name}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-3 sm:ml-auto">
+            <span className="text-xs text-slate-500" aria-live="polite">
+              {rows[0].month}–{rows[rows.length - 1].month} ·{" "}
+              {category === "All" ? "all categories" : category}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setRange("all");
+                setCategory("All");
+              }}
+              disabled={!filtersActive}
+              className="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Metric Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <MetricCard
           label="Total Documents Reviewed"
-          value={summaryMetrics.totalDocumentsReviewed.toLocaleString()}
-          trend="+12.5%"
-          trendUp={true}
+          value={totals.reviewed.toLocaleString()}
+          trend={fmtPct(pctChange(totals.reviewed, prevTotals?.reviewed))}
+          trendUp={prevTotals ? totals.reviewed >= prevTotals.reviewed : null}
           icon={
             <svg
               className="w-6 h-6"
@@ -93,9 +225,10 @@ export default function DashboardPage() {
         />
         <MetricCard
           label="Compliance Violations Flagged"
-          value={summaryMetrics.complianceViolationsFlagged}
-          trend="+5.2%"
-          trendUp={true}
+          value={totals.flagged.toLocaleString()}
+          trend={fmtPct(pctChange(totals.flagged, prevTotals?.flagged))}
+          // More violations is a negative signal
+          trendUp={prevTotals ? totals.flagged <= prevTotals.flagged : null}
           icon={
             <svg
               className="w-6 h-6"
@@ -114,9 +247,15 @@ export default function DashboardPage() {
         />
         <MetricCard
           label="Pass Rate"
-          value={`${summaryMetrics.passRate}%`}
-          trend="+1.8%"
-          trendUp={true}
+          value={`${totals.passRate.toFixed(1)}%`}
+          trend={
+            prevTotals
+              ? `${totals.passRate - prevTotals.passRate >= 0 ? "+" : ""}${(
+                  totals.passRate - prevTotals.passRate
+                ).toFixed(1)} pts`
+              : "—"
+          }
+          trendUp={prevTotals ? totals.passRate >= prevTotals.passRate : null}
           icon={
             <svg
               className="w-6 h-6"
@@ -135,9 +274,18 @@ export default function DashboardPage() {
         />
         <MetricCard
           label="Average Review Time"
-          value={summaryMetrics.averageReviewTime}
-          trend="-0.3 min"
-          trendUp={false}
+          value={`${totals.avgMinutes.toFixed(1)} min`}
+          trend={
+            prevTotals
+              ? `${totals.avgMinutes - prevTotals.avgMinutes >= 0 ? "+" : ""}${(
+                  totals.avgMinutes - prevTotals.avgMinutes
+                ).toFixed(1)} min`
+              : "—"
+          }
+          // Faster reviews are better
+          trendUp={
+            prevTotals ? totals.avgMinutes <= prevTotals.avgMinutes : null
+          }
           icon={
             <svg
               className="w-6 h-6"
@@ -165,9 +313,10 @@ export default function DashboardPage() {
           </h3>
           <p className="text-sm text-slate-500 mb-4">
             Documents reviewed vs. violations flagged over time
+            {category !== "All" && ` (${category} violations)`}
           </p>
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={reviewTrendData}>
+            <AreaChart data={trendData}>
               <defs>
                 <linearGradient id="colorReviewed" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
@@ -216,7 +365,10 @@ export default function DashboardPage() {
               <h3 className="text-lg font-semibold text-slate-900 mb-1">
                 Violation Distribution
               </h3>
-              <p className="text-sm text-slate-500">By rule category</p>
+              <p className="text-sm text-slate-500">
+                By rule category · {rows.reduce((n, r) => n + r.flagged, 0)}{" "}
+                flagged in range
+              </p>
             </div>
             {/* Show / hide labels toggle (eye icon) */}
             <button
@@ -277,8 +429,8 @@ export default function DashboardPage() {
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={violationDistributionData}
-                dataKey="value"
+                data={pieData}
+                dataKey="count"
                 nameKey="name"
                 cx="50%"
                 cy="50%"
@@ -287,18 +439,27 @@ export default function DashboardPage() {
                 paddingAngle={showPieLabels ? 0 : 2}
                 label={
                   showPieLabels
-                    ? ({ name, value }) => `${name} ${value}%`
+                    ? ({ name, payload }) => `${name} ${payload.value}%`
                     : false
                 }
                 labelLine={showPieLabels}
                 isAnimationActive={false}
               >
-                {violationDistributionData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                {pieData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.color}
+                    fillOpacity={
+                      category === "All" || category === entry.name ? 1 : 0.2
+                    }
+                  />
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: number, name: string) => [`${value}%`, name]}
+                formatter={(value: number, name: string) => [
+                  `${value} violations`,
+                  name,
+                ]}
                 contentStyle={{
                   borderRadius: "8px",
                   border: "1px solid #e2e8f0",
@@ -327,7 +488,7 @@ export default function DashboardPage() {
           Total documents reviewed per month
         </p>
         <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={reviewTrendData}>
+          <BarChart data={trendData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#64748b" }} />
             <YAxis tick={{ fontSize: 12, fill: "#64748b" }} />

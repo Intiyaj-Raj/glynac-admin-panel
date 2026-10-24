@@ -1,5 +1,6 @@
 import Sidebar from "@/components/Sidebar";
 import MobileHeader from "@/components/MobileHeader";
+import { AdminStoreProvider } from "@/components/AdminStore";
 
 const navItems = [
   { label: "Dashboard", href: "/" },
@@ -15,12 +16,14 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen">
-      <Sidebar />
-      <MobileHeader navItems={navItems} />
-      <main className="md:ml-64 min-h-screen bg-slate-50">
-        <div className="p-4 sm:p-6 lg:p-8">{children}</div>
-      </main>
-    </div>
+    <AdminStoreProvider>
+      <div className="min-h-screen">
+        <Sidebar />
+        <MobileHeader navItems={navItems} />
+        <main className="md:ml-64 min-h-screen bg-slate-50">
+          <div className="p-4 sm:p-6 lg:p-8">{children}</div>
+        </main>
+      </div>
+    </AdminStoreProvider>
   );
 }

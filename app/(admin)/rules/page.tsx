@@ -1,43 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import Toggle from "@/components/Toggle";
 import { SeverityBadge } from "@/components/Badges";
-import { mockRules } from "@/data/mockData";
+import { useAdminStore } from "@/components/AdminStore";
 import type { ComplianceRule, Severity } from "@/types";
 
 const SEVERITY_OPTIONS: Severity[] = ["Low", "Medium", "High", "Critical"];
 
 export default function RulesPage() {
-  const [rules, setRules] = useState<ComplianceRule[]>(mockRules);
+  const { rules, addRule, updateRule, toggleRule } = useAdminStore();
   const [search, setSearch] = useState("");
+  const [severityFilter, setSeverityFilter] = useState<string>("All");
+  const [statusFilter, setStatusFilter] = useState<string>("All");
   const [editingRule, setEditingRule] = useState<ComplianceRule | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // Filter rules by search text
-  const filteredRules = rules.filter(
-    (r) =>
-      r.name.toLowerCase().includes(search.toLowerCase()) ||
-      r.id.toLowerCase().includes(search.toLowerCase()) ||
-      r.category.toLowerCase().includes(search.toLowerCase()),
-  );
+  // Filter rules by search text, severity and active status
+  const filteredRules = useMemo(() => {
+    const q = search.toLowerCase();
+    return rules.filter((r) => {
+      const matchesSearch =
+        r.name.toLowerCase().includes(q) ||
+        r.id.toLowerCase().includes(q) ||
+        r.category.toLowerCase().includes(q);
+      const matchesSeverity =
+        severityFilter === "All" || r.severity === severityFilter;
+      const matchesStatus =
+        statusFilter === "All" ||
+        (statusFilter === "Active" ? r.active : !r.active);
+      return matchesSearch && matchesSeverity && matchesStatus;
+    });
+  }, [rules, search, severityFilter, statusFilter]);
 
-  // Toggle a rule's active status
-  const toggleRuleActive = (id: string) => {
-    setRules(rules.map((r) => (r.id === id ? { ...r, active: !r.active } : r)));
-  };
+  const existingIds = useMemo(() => rules.map((r) => r.id), [rules]);
 
   // Save edits to an existing rule
   const handleSaveRule = (updated: ComplianceRule) => {
-    setRules(rules.map((r) => (r.id === updated.id ? updated : r)));
+    updateRule(updated);
     setEditingRule(null);
   };
 
   // Add a new custom rule
   const handleAddRule = (newRule: ComplianceRule) => {
-    setRules([...rules, newRule]);
+    addRule(newRule);
     setShowAddModal(false);
   };
 
@@ -69,29 +77,54 @@ export default function RulesPage() {
         }
       />
 
-      {/* Search */}
+      {/* Search + filters */}
       <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 mb-4">
-        <div className="relative">
-          <svg
-            className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 relative">
+            <svg
+              className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search rules by name, ID, or category..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search rules by name, ID, or category..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
+          </div>
+          <select
+            value={severityFilter}
+            onChange={(e) => setSeverityFilter(e.target.value)}
+            aria-label="Filter by severity"
+            className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+          >
+            <option value="All">All Severities</option>
+            {SEVERITY_OPTIONS.map((sv) => (
+              <option key={sv} value={sv}>
+                {sv}
+              </option>
+            ))}
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            aria-label="Filter by status"
+            className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+          >
+            <option value="All">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
         </div>
       </div>
 
@@ -115,7 +148,7 @@ export default function RulesPage() {
               {filteredRules.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center py-8 text-slate-400">
-                    No rules found matching your search.
+                    No rules found matching your filters.
                   </td>
                 </tr>
               ) : (
@@ -146,7 +179,7 @@ export default function RulesPage() {
                     <td className="px-4 py-3">
                       <Toggle
                         checked={rule.active}
-                        onChange={() => toggleRuleActive(rule.id)}
+                        onChange={() => toggleRule(rule.id)}
                         label={`Toggle ${rule.name}`}
                         showStatus
                       />
@@ -171,6 +204,7 @@ export default function RulesPage() {
       {editingRule && (
         <RuleEditModal
           rule={editingRule}
+          existingIds={existingIds}
           onClose={() => setEditingRule(null)}
           onSave={handleSaveRule}
         />
@@ -180,6 +214,7 @@ export default function RulesPage() {
       {showAddModal && (
         <RuleEditModal
           rule={null}
+          existingIds={existingIds}
           onClose={() => setShowAddModal(false)}
           onSave={handleAddRule}
         />
@@ -191,10 +226,12 @@ export default function RulesPage() {
 // Shared modal for editing an existing rule or creating a new one
 function RuleEditModal({
   rule,
+  existingIds,
   onClose,
   onSave,
 }: {
   rule: ComplianceRule | null;
+  existingIds: string[];
   onClose: () => void;
   onSave: (rule: ComplianceRule) => void;
 }) {
@@ -205,10 +242,24 @@ function RuleEditModal({
   const [severity, setSeverity] = useState<Severity>(rule?.severity ?? "Low");
   const [active, setActive] = useState(rule?.active ?? true);
 
+  // Duplicate check (case-insensitive) – only relevant when creating a rule
+  const trimmedId = id.trim();
+  const isDuplicate =
+    !rule &&
+    trimmedId !== "" &&
+    existingIds.some((x) => x.toLowerCase() === trimmedId.toLowerCase());
+
   const handleSave = () => {
-    // Basic validation - don't save if required fields are empty
-    if (!id.trim() || !name.trim()) return;
-    onSave({ id, name, description, category, severity, active });
+    // Validation - required fields and unique ID
+    if (!trimmedId || !name.trim() || isDuplicate) return;
+    onSave({
+      id: trimmedId,
+      name: name.trim(),
+      description,
+      category,
+      severity,
+      active,
+    });
   };
 
   return (
@@ -229,8 +280,19 @@ function RuleEditModal({
             onChange={(e) => setId(e.target.value)}
             disabled={!!rule}
             placeholder="e.g. FINRA-2210"
-            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-slate-100 disabled:text-slate-500"
+            aria-invalid={isDuplicate}
+            aria-describedby={isDuplicate ? "rule-id-error" : undefined}
+            className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 disabled:bg-slate-100 disabled:text-slate-500 ${
+              isDuplicate
+                ? "border-red-400 focus:ring-red-400"
+                : "border-slate-300 focus:ring-primary-500"
+            }`}
           />
+          {isDuplicate && (
+            <p id="rule-id-error" className="text-xs text-red-600 mt-1">
+              A rule with ID “{trimmedId}” already exists. Choose a unique ID.
+            </p>
+          )}
         </div>
 
         {/* Rule Name */}
@@ -284,6 +346,7 @@ function RuleEditModal({
             {SEVERITY_OPTIONS.map((s) => (
               <button
                 key={s}
+                type="button"
                 onClick={() => setSeverity(s)}
                 className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
                   severity === s
@@ -321,7 +384,7 @@ function RuleEditModal({
         </button>
         <button
           onClick={handleSave}
-          disabled={!id.trim() || !name.trim()}
+          disabled={!trimmedId || !name.trim() || isDuplicate}
           className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {rule ? "Save Changes" : "Add Rule"}

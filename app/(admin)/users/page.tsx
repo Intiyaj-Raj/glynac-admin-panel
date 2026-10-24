@@ -4,8 +4,7 @@ import { useState, useMemo } from "react";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import { StatusBadge } from "@/components/Badges";
-import { mockUsers } from "@/data/mockData";
-import type { User, UserRole, Permission } from "@/types";
+import { useAdminStore } from "@/components/AdminStore";
 
 const ALL_ROLES: UserRole[] = [
   "Admin",
@@ -13,7 +12,7 @@ const ALL_ROLES: UserRole[] = [
   "Advisor",
   "Auditor",
 ];
-const ALL_PERMISSIONS: Permission[] = ["Read", "Write", "Approve", "Admin"];
+const ALL_STATUSES: UserStatus[] = ["Active", "Pending", "Suspended"];
 const ROWS_PER_PAGE = 8;
 
 type SortField = "name" | "email" | "role" | "status";
@@ -45,7 +44,7 @@ function SortIcon({ active, asc }: { active: boolean; asc: boolean }) {
 }
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const { users, updateUser } = useAdminStore();
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortAsc, setSortAsc] = useState(true);
@@ -96,7 +95,7 @@ export default function UsersPage() {
 
   // Save updated user from the modal back to the users array
   const handleSaveUser = (updatedUser: User) => {
-    setUsers(users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+    updateUser(updatedUser);
     setEditingUser(null);
   };
 
@@ -265,6 +264,9 @@ export default function UsersPage() {
                     <SortIcon active={sortField === "status"} asc={sortAsc} />
                   </button>
                 </th>
+                <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">
+                  Access
+                </th>
                 <th className="text-left px-4 py-3 font-medium hidden md:table-cell">
                   Last Active
                 </th>
@@ -274,7 +276,7 @@ export default function UsersPage() {
             <tbody className="divide-y divide-slate-100">
               {pageUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-slate-400">
+                  <td colSpan={7} className="text-center py-8 text-slate-400">
                     No users found matching your filters.
                   </td>
                 </tr>
@@ -304,6 +306,17 @@ export default function UsersPage() {
                     <td className="px-4 py-3">
                       <StatusBadge status={user.status} />
                     </td>
+                    <td className="px-4 py-3 text-slate-600 hidden lg:table-cell">
+                      <span
+                        className="text-xs"
+                        title={ALL_MODULES.map(
+                          (m) =>
+                            `${m.label}: ${user.permissions[m.id].join(", ") || "none"}`,
+                        ).join("\n")}
+                      >
+                        {countGrants(user.permissions)}/{MAX_GRANTS} grants
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-slate-500 hidden md:table-cell">
                       {user.lastActive}
                     </td>
@@ -312,7 +325,7 @@ export default function UsersPage() {
                         onClick={() => setEditingUser(user)}
                         className="text-primary-600 hover:text-primary-700 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors"
                       >
-                        Edit Role
+                        Edit Access
                       </button>
                     </td>
                   </tr>
@@ -365,7 +378,7 @@ export default function UsersPage() {
   );
 }
 
-// Modal for editing a user's role and permissions
+// Modal for editing a user's role, status and per-module permissions
 function RoleEditorModal({
   user,
   onClose,
@@ -376,25 +389,60 @@ function RoleEditorModal({
   onSave: (user: User) => void;
 }) {
   const [role, setRole] = useState<UserRole>(user.role);
-  const [permissions, setPermissions] = useState<Permission[]>(
+  const [status, setStatus] = useState<UserStatus>(user.status);
+  const [permissions, setPermissions] = useState<ModulePermissions>(
     user.permissions,
   );
+  const [roleNote, setRoleNote] = useState("");
 
-  // Toggle a single permission checkbox
-  const togglePermission = (perm: Permission) => {
-    if (permissions.includes(perm)) {
-      setPermissions(permissions.filter((p) => p !== perm));
-    } else {
-      setPermissions([...permissions, perm]);
-    }
+  // Selecting a role applies that role's default permission matrix
+  const handleRoleChange = (next: UserRole) => {
+    setRole(next);
+    setPermissions(defaultPermissionsFor(next));
+    setRoleNote(
+      `Default permissions for ${next} applied. You can still adjust them below.`,
+    );
+  };
+
+  // Toggle one permission for one module
+  const togglePermission = (moduleId: ModuleId, perm: Permission) => {
+    setRoleNote("");
+    setPermissions((prev) => {
+      const has = prev[moduleId].includes(perm);
+      return {
+        ...prev,
+        [moduleId]: has
+          ? prev[moduleId].filter((p) => p !== perm)
+          : [...prev[moduleId], perm],
+      };
+    });
+  };
+
+  // Grant / revoke every module for a single permission column
+  const toggleColumn = (perm: Permission) => {
+    setRoleNote("");
+    const allOn = ALL_MODULES.every((m) => permissions[m.id].includes(perm));
+    setPermissions((prev) => {
+      const next = { ...prev };
+      ALL_MODULES.forEach((m) => {
+        const without = prev[m.id].filter((p) => p !== perm);
+        next[m.id] = allOn ? without : [...without, perm];
+      });
+      return next;
+    });
   };
 
   const handleSave = () => {
-    onSave({ ...user, role, permissions });
+    onSave({ ...user, role, status, permissions });
   };
 
   return (
-    <Modal open={true} onClose={onClose} title="Edit Role & Permissions">
+    <Modal
+      open={true}
+      onClose={onClose}
+      title="Edit Role & Permissions"
+      size="lg"
+    >
       {/* User info */}
       <div className="flex items-center gap-3 mb-5 pb-4 border-b border-slate-200">
         <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-sm font-semibold">
@@ -409,56 +457,128 @@ function RoleEditorModal({
         </div>
       </div>
 
-      {/* Role selector */}
-      <div className="mb-5">
-        <label className="block text-sm font-medium text-slate-700 mb-2">
-          Role
-        </label>
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value as UserRole)}
-          className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
-        >
-          {ALL_ROLES.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
+      {/* Role + status */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
+        <div>
+          <label
+            htmlFor="role-select"
+            className="block text-sm font-medium text-slate-700 mb-2"
+          >
+            Role
+          </label>
+          <select
+            id="role-select"
+            value={role}
+            onChange={(e) => handleRoleChange(e.target.value as UserRole)}
+            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+          >
+            {ALL_ROLES.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label
+            htmlFor="status-select"
+            className="block text-sm font-medium text-slate-700 mb-2"
+          >
+            Status
+          </label>
+          <select
+            id="status-select"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as UserStatus)}
+            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+          >
+            {ALL_STATUSES.map((st) => (
+              <option key={st} value={st}>
+                {st}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
+      <p
+        className="text-xs text-primary-700 min-h-[1rem] mb-4"
+        aria-live="polite"
+      >
+        {roleNote}
+      </p>
 
-      {/* Permissions checkboxes */}
+      {/* Permission matrix: modules x permissions */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-slate-700 mb-2">
-          Permissions
-        </label>
-        <div className="space-y-2">
-          {ALL_PERMISSIONS.map((perm) => (
-            <label
-              key={perm}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={permissions.includes(perm)}
-                onChange={() => togglePermission(perm)}
-                className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500"
-              />
-              <span className="text-sm text-slate-700">{perm}</span>
-            </label>
-          ))}
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm font-medium text-slate-700">
+            Permissions by module
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              setPermissions(defaultPermissionsFor(role));
+              setRoleNote(`Reset to ${role} defaults.`);
+            }}
+            className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+          >
+            Reset to role defaults
+          </button>
+        </div>
+        <div className="overflow-x-auto border border-slate-200 rounded-lg">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-slate-600">
+              <tr>
+                <th className="text-left px-3 py-2 font-medium">Module</th>
+                {ALL_PERMISSIONS.map((perm) => (
+                  <th key={perm} className="px-3 py-2 font-medium text-center">
+                    <button
+                      type="button"
+                      onClick={() => toggleColumn(perm)}
+                      title={`Toggle ${perm} for all modules`}
+                      className="hover:text-slate-900 underline-offset-2 hover:underline"
+                    >
+                      {perm}
+                    </button>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {ALL_MODULES.map((m) => (
+                <tr key={m.id}>
+                  <td className="px-3 py-2">
+                    <p className="font-medium text-slate-800">{m.label}</p>
+                    <p className="text-xs text-slate-500">{m.description}</p>
+                  </td>
+                  {ALL_PERMISSIONS.map((perm) => (
+                    <td key={perm} className="px-3 py-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={permissions[m.id].includes(perm)}
+                        onChange={() => togglePermission(m.id, perm)}
+                        aria-label={`${perm} on ${m.label}`}
+                        className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500"
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
       {/* Action buttons */}
       <div className="flex justify-end gap-3">
         <button
+          type="button"
           onClick={onClose}
           className="px-4 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50"
         >
           Cancel
         </button>
         <button
+          type="button"
           onClick={handleSave}
           className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700"
         >

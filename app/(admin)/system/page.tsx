@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
 import { ServiceStatusBadge, LogTypeBadge } from "@/components/Badges";
-import { mockServices, mockActivityLogs } from "@/data/mockData";
+import { mockServices } from "@/data/mockData";
+import { useAdminStore } from "@/components/AdminStore";
 import type { SystemService } from "@/types";
 
 // Get latency color based on how fast the service responds
@@ -20,8 +22,125 @@ function getOverallErrorRate(services: SystemService[]): string {
   return `${rate.toFixed(1)}%`;
 }
 
+// Simulated platform events that arrive while the stream is live
+const SIMULATED_EVENTS: {
+  user: string;
+  action: string;
+  module: string;
+  type: "info" | "warning" | "error";
+}[] = [
+  {
+    user: "Michael Chen",
+    action: "Reviewed document Client_Disclosure_Q3.pdf",
+    module: "VDR",
+    type: "info",
+  },
+  {
+    user: "Emily Rodriguez",
+    action: "Downloaded client portfolio document",
+    module: "VDR",
+    type: "info",
+  },
+  {
+    user: "Jessica Williams",
+    action: "Approved flagged document after review",
+    module: "VDR",
+    type: "info",
+  },
+  {
+    user: "Patricia Adams",
+    action: "Reviewed audit trail for AML-001",
+    module: "Policy Manager",
+    type: "info",
+  },
+  {
+    user: "James Martinez",
+    action: "Failed login attempt - 3 retries",
+    module: "Authentication",
+    type: "warning",
+  },
+  {
+    user: "Christopher Lee",
+    action: "Uploaded new compliance document",
+    module: "VDR",
+    type: "info",
+  },
+  {
+    user: "System",
+    action: "AI Compliance Engine response time exceeded threshold",
+    module: "System Health",
+    type: "error",
+  },
+  {
+    user: "System",
+    action: "Notification Service retry queue growing",
+    module: "System Health",
+    type: "warning",
+  },
+  {
+    user: "Amanda Foster",
+    action: "Exported compliance report (CSV)",
+    module: "Policy Manager",
+    type: "info",
+  },
+  {
+    user: "David Kim",
+    action: "Access denied to restricted module",
+    module: "Authentication",
+    type: "warning",
+  },
+];
+
+const STREAM_INTERVAL_MS = 4000;
+
 export default function SystemHealthPage() {
-  const [logs] = useState(mockActivityLogs);
+  // Logs live in the shared store, so actions from other pages show up here
+  const { logs, addLog, flags, flagsReady } = useAdminStore();
+  const [live, setLive] = useState(true);
+  const [services, setServices] = useState(mockServices);
+  const [lastUpdated, setLastUpdated] = useState<string>("");
+  const seenTopId = useRef<number | null>(null);
+  const [freshIds, setFreshIds] = useState<number[]>([]);
+
+  // Real-time simulation: new audit events + small latency fluctuations
+  useEffect(() => {
+    if (!live) return;
+    const tick = () => {
+      const evt =
+        SIMULATED_EVENTS[Math.floor(Math.random() * SIMULATED_EVENTS.length)];
+      addLog({ ...evt, simulated: true });
+      setServices((prev) =>
+        prev.map((svc, i) => {
+          const base = mockServices[i].latencyMs;
+          const jitter = 1 + (Math.random() - 0.5) * 0.3;
+          return { ...svc, latencyMs: Math.max(5, Math.round(base * jitter)) };
+        }),
+      );
+      setLastUpdated(new Date().toLocaleTimeString());
+    };
+    const t = setInterval(tick, STREAM_INTERVAL_MS);
+    return () => clearInterval(t);
+  }, [live, addLog]);
+
+  // Briefly highlight entries that arrived after the page was opened
+  useEffect(() => {
+    const topId = logs[0]?.id ?? null;
+    if (seenTopId.current === null) {
+      seenTopId.current = topId;
+      return;
+    }
+    const prevTop = seenTopId.current;
+    const newOnes = logs.filter((l) => l.id > (prevTop ?? 0)).map((l) => l.id);
+    seenTopId.current = topId;
+    if (newOnes.length === 0) return;
+    setFreshIds((ids) => [...ids, ...newOnes]);
+    const t = setTimeout(
+      () => setFreshIds((ids) => ids.filter((id) => !newOnes.includes(id))),
+      2500,
+    );
+    return () => clearTimeout(t);
+  }, [logs]);
+
   const [logSearch, setLogSearch] = useState("");
   const [logTypeFilter, setLogTypeFilter] = useState<string>("All");
   const [moduleFilter, setModuleFilter] = useState<string>("All");
@@ -35,9 +154,12 @@ export default function SystemHealthPage() {
   // Filter logs by search, type, and module
   const filteredLogs = useMemo(() => {
     return logs.filter((l) => {
+      const q = logSearch.toLowerCase();
       const matchesSearch =
-        l.user.toLowerCase().includes(logSearch.toLowerCase()) ||
-        l.action.toLowerCase().includes(logSearch.toLowerCase());
+        l.user.toLowerCase().includes(q) ||
+        l.action.toLowerCase().includes(q) ||
+        (l.entityId ?? "").toLowerCase().includes(q) ||
+        (l.entityName ?? "").toLowerCase().includes(q);
       const matchesType = logTypeFilter === "All" || l.type === logTypeFilter;
       const matchesModule = moduleFilter === "All" || l.module === moduleFilter;
       return matchesSearch && matchesType && matchesModule;
@@ -45,18 +167,47 @@ export default function SystemHealthPage() {
   }, [logs, logSearch, logTypeFilter, moduleFilter]);
 
   // Overall system health summary
-  const operationalCount = mockServices.filter(
+  const operationalCount = services.filter(
     (s) => s.status === "Operational",
   ).length;
-  const degradedCount = mockServices.filter(
-    (s) => s.status === "Degraded",
-  ).length;
+  const degradedCount = services.filter((s) => s.status === "Degraded").length;
 
   return (
     <div>
       <PageHeader
         title="System Health & Activity Log"
         subtitle="Monitor platform services and audit user actions in real time"
+        action={
+          <div className="flex items-center gap-3">
+            {lastUpdated && live && (
+              <span className="text-xs text-slate-500 hidden sm:inline">
+                Updated {lastUpdated}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setLive((v) => !v)}
+              aria-pressed={live}
+              className={`inline-flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors ${
+                live
+                  ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
+                  : "border-slate-300 text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              <span className="relative flex h-2 w-2">
+                {live && (
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
+                )}
+                <span
+                  className={`relative inline-flex h-2 w-2 rounded-full ${
+                    live ? "bg-green-500" : "bg-slate-400"
+                  }`}
+                />
+              </span>
+              {live ? "Live" : "Paused"}
+            </button>
+          </div>
+        }
       />
 
       {/* System Health Summary Cards */}
@@ -64,7 +215,7 @@ export default function SystemHealthPage() {
         <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
           <p className="text-sm text-slate-500">Services Operational</p>
           <p className="text-2xl font-bold text-green-600 mt-1">
-            {operationalCount}/{mockServices.length}
+            {operationalCount}/{services.length}
           </p>
         </div>
         <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
@@ -77,8 +228,8 @@ export default function SystemHealthPage() {
           <p className="text-sm text-slate-500">Avg API Latency</p>
           <p className="text-2xl font-bold text-slate-900 mt-1">
             {Math.round(
-              mockServices.reduce((sum, s) => sum + s.latencyMs, 0) /
-                mockServices.length,
+              services.reduce((sum, s) => sum + s.latencyMs, 0) /
+                services.length,
             )}{" "}
             ms
           </p>
@@ -86,9 +237,50 @@ export default function SystemHealthPage() {
         <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
           <p className="text-sm text-slate-500">Error Rate</p>
           <p className="text-2xl font-bold text-red-600 mt-1">
-            {getOverallErrorRate(mockServices)}
+            {getOverallErrorRate(services)}
           </p>
         </div>
+      </div>
+
+      {/* Feature configuration (reads the same shared flags as the Flags page) */}
+      <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 mb-6">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h3 className="text-lg font-semibold text-slate-900">
+            Feature Configuration
+          </h3>
+          <Link
+            href="/flags"
+            className="text-xs font-medium text-primary-600 hover:text-primary-700"
+          >
+            Manage flags
+          </Link>
+        </div>
+        <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          {!flagsReady
+            ? [0, 1, 2].map((i) => (
+                <li
+                  key={i}
+                  className="h-9 rounded-lg bg-slate-100 animate-pulse"
+                />
+              ))
+            : flags.map((f) => (
+                <li
+                  key={f.id}
+                  className="flex items-center justify-between gap-2 text-sm px-3 py-2 rounded-lg border border-slate-200"
+                >
+                  <span className="truncate text-slate-700">
+                    {f.name.replace(/^Enable\s+/i, "")}
+                  </span>
+                  <span
+                    className={`text-xs font-medium ${
+                      f.enabled ? "text-green-700" : "text-slate-500"
+                    }`}
+                  >
+                    {f.enabled ? "Enabled" : "Disabled"}
+                  </span>
+                </li>
+              ))}
+        </ul>
       </div>
 
       {/* Service Health Table */}
@@ -110,7 +302,7 @@ export default function SystemHealthPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {mockServices.map((service) => (
+              {services.map((service) => (
                 <tr
                   key={service.name}
                   className="hover:bg-slate-50 transition-colors"
@@ -166,6 +358,7 @@ export default function SystemHealthPage() {
           </h3>
           <p className="text-sm text-slate-500 mt-1">
             Real-time audit trail of user actions across the platform
+            {live ? " · streaming" : " · paused"}
           </p>
         </div>
 
@@ -226,7 +419,9 @@ export default function SystemHealthPage() {
             filteredLogs.map((log) => (
               <div
                 key={log.id}
-                className="flex items-start gap-3 px-5 py-3 hover:bg-slate-50 transition-colors"
+                className={`flex items-start gap-3 px-5 py-3 hover:bg-slate-50 transition-colors duration-700 ${
+                  freshIds.includes(log.id) ? "bg-primary-50" : ""
+                }`}
               >
                 {/* Type indicator dot */}
                 <div
@@ -246,6 +441,12 @@ export default function SystemHealthPage() {
                     </span>
                   </div>
                   <p className="text-sm text-slate-800 mt-1">{log.action}</p>
+                  {log.actionType === "feature_flag_changed" && (
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      <span className="font-mono">{log.entityId}</span> ·{" "}
+                      {log.entityName} · {log.previousState} → {log.newState}
+                    </p>
+                  )}
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-slate-500">{log.user}</span>
                     <span className="text-xs text-slate-400">•</span>

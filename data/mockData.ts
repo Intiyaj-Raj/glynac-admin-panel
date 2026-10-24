@@ -5,6 +5,7 @@ import type {
   ActivityLog,
   FeatureFlag,
 } from "@/types";
+import { defaultPermissionsFor } from "@/data/rbac";
 
 export const mockUsers: User[] = [
   {
@@ -14,7 +15,7 @@ export const mockUsers: User[] = [
     role: "Admin",
     status: "Active",
     lastActive: "2025-10-02 09:15",
-    permissions: ["Read", "Write", "Approve", "Admin"],
+    permissions: defaultPermissionsFor("Admin"),
   },
   {
     id: 2,
@@ -23,7 +24,7 @@ export const mockUsers: User[] = [
     role: "Compliance Officer",
     status: "Active",
     lastActive: "2025-10-02 08:42",
-    permissions: ["Read", "Write", "Approve"],
+    permissions: defaultPermissionsFor("Compliance Officer"),
   },
   {
     id: 3,
@@ -32,7 +33,7 @@ export const mockUsers: User[] = [
     role: "Advisor",
     status: "Active",
     lastActive: "2025-10-01 17:30",
-    permissions: ["Read", "Write"],
+    permissions: defaultPermissionsFor("Advisor"),
   },
   {
     id: 4,
@@ -41,7 +42,7 @@ export const mockUsers: User[] = [
     role: "Auditor",
     status: "Pending",
     lastActive: "2025-09-30 14:00",
-    permissions: ["Read"],
+    permissions: defaultPermissionsFor("Auditor"),
   },
   {
     id: 5,
@@ -50,7 +51,7 @@ export const mockUsers: User[] = [
     role: "Compliance Officer",
     status: "Active",
     lastActive: "2025-10-02 07:55",
-    permissions: ["Read", "Write", "Approve"],
+    permissions: defaultPermissionsFor("Compliance Officer"),
   },
   {
     id: 6,
@@ -59,7 +60,7 @@ export const mockUsers: User[] = [
     role: "Advisor",
     status: "Suspended",
     lastActive: "2025-09-28 11:20",
-    permissions: ["Read"],
+    permissions: { documents: ["Read"], policies: [], users: [], system: [], flags: [] },
   },
   {
     id: 7,
@@ -68,7 +69,7 @@ export const mockUsers: User[] = [
     role: "Admin",
     status: "Active",
     lastActive: "2025-10-02 06:10",
-    permissions: ["Read", "Write", "Approve", "Admin"],
+    permissions: defaultPermissionsFor("Admin"),
   },
   {
     id: 8,
@@ -77,7 +78,7 @@ export const mockUsers: User[] = [
     role: "Auditor",
     status: "Active",
     lastActive: "2025-10-01 16:45",
-    permissions: ["Read", "Write"],
+    permissions: defaultPermissionsFor("Auditor"),
   },
   {
     id: 9,
@@ -86,7 +87,7 @@ export const mockUsers: User[] = [
     role: "Compliance Officer",
     status: "Pending",
     lastActive: "2025-09-29 10:00",
-    permissions: ["Read"],
+    permissions: defaultPermissionsFor("Compliance Officer"),
   },
   {
     id: 10,
@@ -95,7 +96,7 @@ export const mockUsers: User[] = [
     role: "Advisor",
     status: "Active",
     lastActive: "2025-10-02 08:00",
-    permissions: ["Read", "Write"],
+    permissions: defaultPermissionsFor("Advisor"),
   },
   {
     id: 11,
@@ -104,7 +105,7 @@ export const mockUsers: User[] = [
     role: "Auditor",
     status: "Active",
     lastActive: "2025-10-01 15:30",
-    permissions: ["Read", "Approve"],
+    permissions: defaultPermissionsFor("Auditor"),
   },
   {
     id: 12,
@@ -113,7 +114,7 @@ export const mockUsers: User[] = [
     role: "Compliance Officer",
     status: "Suspended",
     lastActive: "2025-09-27 09:00",
-    permissions: ["Read"],
+    permissions: { documents: ["Read"], policies: [], users: [], system: [], flags: [] },
   },
 ];
 
@@ -309,6 +310,7 @@ export const mockActivityLogs: ActivityLog[] = [
 export const mockFeatureFlags: FeatureFlag[] = [
   {
     id: "flag-1",
+    configKey: "ai_substring_validation",
     name: "Enable AI Substring Validation",
     description: "Validates AI responses for compliance keyword matches",
     enabled: true,
@@ -316,6 +318,7 @@ export const mockFeatureFlags: FeatureFlag[] = [
   },
   {
     id: "flag-2",
+    configKey: "presidio_pii_masking",
     name: "Enable Presidio PII Masking",
     description: "Masks personally identifiable information in documents",
     enabled: true,
@@ -323,6 +326,7 @@ export const mockFeatureFlags: FeatureFlag[] = [
   },
   {
     id: "flag-3",
+    configKey: "precedent_lookup",
     name: "Enable Precedent Lookup",
     description: "Allows searching historical compliance precedents",
     enabled: false,
@@ -330,6 +334,7 @@ export const mockFeatureFlags: FeatureFlag[] = [
   },
   {
     id: "flag-4",
+    configKey: "auto_document_classification",
     name: "Enable Auto-Document Classification",
     description: "Automatically categorizes uploaded documents",
     enabled: true,
@@ -337,6 +342,7 @@ export const mockFeatureFlags: FeatureFlag[] = [
   },
   {
     id: "flag-5",
+    configKey: "realtime_audit_alerts",
     name: "Enable Real-time Audit Alerts",
     description: "Sends instant alerts for flagged compliance events",
     enabled: true,
@@ -344,6 +350,7 @@ export const mockFeatureFlags: FeatureFlag[] = [
   },
   {
     id: "flag-6",
+    configKey: "advanced_risk_scoring",
     name: "Enable Advanced Risk Scoring",
     description: "Uses ML model to score client portfolio risk",
     enabled: false,
@@ -353,16 +360,16 @@ export const mockFeatureFlags: FeatureFlag[] = [
 
 // Analytics chart data
 export const reviewTrendData = [
-  { month: "Jan", reviewed: 420, flagged: 32 },
-  { month: "Feb", reviewed: 480, flagged: 28 },
-  { month: "Mar", reviewed: 550, flagged: 45 },
-  { month: "Apr", reviewed: 510, flagged: 38 },
-  { month: "May", reviewed: 630, flagged: 52 },
-  { month: "Jun", reviewed: 580, flagged: 41 },
-  { month: "Jul", reviewed: 700, flagged: 58 },
-  { month: "Aug", reviewed: 650, flagged: 47 },
-  { month: "Sep", reviewed: 720, flagged: 55 },
-  { month: "Oct", reviewed: 780, flagged: 62 },
+  { month: "Jan", reviewed: 420, flagged: 32, avgMinutes: 4.9 },
+  { month: "Feb", reviewed: 480, flagged: 28, avgMinutes: 4.8 },
+  { month: "Mar", reviewed: 550, flagged: 45, avgMinutes: 4.7 },
+  { month: "Apr", reviewed: 510, flagged: 38, avgMinutes: 4.6 },
+  { month: "May", reviewed: 630, flagged: 52, avgMinutes: 4.4 },
+  { month: "Jun", reviewed: 580, flagged: 41, avgMinutes: 4.3 },
+  { month: "Jul", reviewed: 700, flagged: 58, avgMinutes: 4.0 },
+  { month: "Aug", reviewed: 650, flagged: 47, avgMinutes: 3.9 },
+  { month: "Sep", reviewed: 720, flagged: 55, avgMinutes: 3.8 },
+  { month: "Oct", reviewed: 780, flagged: 62, avgMinutes: 3.7 },
 ];
 
 export const violationDistributionData = [
