@@ -33,8 +33,6 @@ type Totals = {
   avgMinutes: number;
 };
 
-// Aggregate months into headline numbers. `share` (0-1) narrows the flagged
-// count to a single rule category.
 function totalsFor(rows: typeof reviewTrendData, share: number): Totals {
   const reviewed = rows.reduce((n, r) => n + r.reviewed, 0);
   const allFlagged = rows.reduce((n, r) => n + r.flagged, 0);

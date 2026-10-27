@@ -60,7 +60,13 @@ export const mockUsers: User[] = [
     role: "Advisor",
     status: "Suspended",
     lastActive: "2025-09-28 11:20",
-    permissions: { documents: ["Read"], policies: [], users: [], system: [], flags: [] },
+    permissions: {
+      documents: ["Read"],
+      policies: [],
+      users: [],
+      system: [],
+      flags: [],
+    },
   },
   {
     id: 7,
@@ -114,7 +120,13 @@ export const mockUsers: User[] = [
     role: "Compliance Officer",
     status: "Suspended",
     lastActive: "2025-09-27 09:00",
-    permissions: { documents: ["Read"], policies: [], users: [], system: [], flags: [] },
+    permissions: {
+      documents: ["Read"],
+      policies: [],
+      users: [],
+      system: [],
+      flags: [],
+    },
   },
 ];
 

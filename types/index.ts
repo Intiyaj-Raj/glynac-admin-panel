@@ -4,6 +4,10 @@ export type Permission = "Read" | "Write" | "Approve" | "Admin";
 
 export type UserRole = "Admin" | "Compliance Officer" | "Advisor" | "Auditor";
 
+export type ModuleId = "documents" | "policies" | "users" | "system" | "flags";
+
+export type ModulePermissions = Record<ModuleId, Permission[]>;
+
 export interface User {
   id: number;
   name: string;
@@ -11,7 +15,7 @@ export interface User {
   role: UserRole;
   status: UserStatus;
   lastActive: string;
-  permissions: Permission[];
+  permissions: ModulePermissions;
 }
 
 export type Severity = "Low" | "Medium" | "High" | "Critical";
@@ -41,6 +45,14 @@ export interface ActivityLog {
   module: string;
   timestamp: string;
   type: "info" | "warning" | "error";
+
+  actionType?: "feature_flag_changed";
+  entityId?: string;
+  entityName?: string;
+  previousState?: string;
+  newState?: string;
+
+  simulated?: boolean;
 }
 
 export interface FeatureFlag {
@@ -49,4 +61,8 @@ export interface FeatureFlag {
   description: string;
   enabled: boolean;
   category: string;
+
+  configKey: string;
+  updatedAt?: string;
+  updatedBy?: string;
 }

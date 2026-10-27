@@ -1,8 +1,5 @@
 "use client";
 
-// Toggle switch used for feature flags and rule active status.
-// With `showStatus`, the current state is made explicit: green track + check icon
-// when on, grey track + cross icon when off, and a text label ("Active"/"Inactive").
 export default function Toggle({
   checked,
   onChange,
@@ -10,6 +7,7 @@ export default function Toggle({
   showStatus = false,
   onText = "Active",
   offText = "Inactive",
+  disabled = false,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
@@ -17,6 +15,7 @@ export default function Toggle({
   showStatus?: boolean;
   onText?: string;
   offText?: string;
+  disabled?: boolean;
 }) {
   const onColor = showStatus ? "bg-green-600" : "bg-primary-600";
 
@@ -26,8 +25,11 @@ export default function Toggle({
       role="switch"
       aria-checked={checked}
       aria-label={label}
+      disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+      className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full ${
+        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+      } transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
         showStatus
           ? "focus-visible:ring-green-500"
           : "focus-visible:ring-primary-500"

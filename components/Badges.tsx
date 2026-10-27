@@ -1,6 +1,5 @@
 import type { UserStatus, Severity, SystemStatus } from "@/types";
 
-// Color-coded badge for user status (Active/Pending/Suspended)
 export function StatusBadge({ status }: { status: UserStatus }) {
   const colors: Record<UserStatus, string> = {
     Active: "bg-green-100 text-green-700",
@@ -17,8 +16,6 @@ export function StatusBadge({ status }: { status: UserStatus }) {
   );
 }
 
-// Severity badge. Uses ONE accent hue (rose) that grows in intensity with severity,
-// plus a 4-step level meter so the level never depends on color alone.
 const SEVERITY_LEVEL: Record<Severity, number> = {
   Low: 1,
   Medium: 2,
@@ -91,8 +88,6 @@ export function ServiceStatusBadge({ status }: { status: SystemStatus }) {
     </span>
   );
 }
-
-// Badge for log entry type (info/warning/error)
 export function LogTypeBadge({ type }: { type: "info" | "warning" | "error" }) {
   const colors = {
     info: "bg-blue-100 text-blue-700",

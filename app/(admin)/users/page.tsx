@@ -5,6 +5,21 @@ import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import { StatusBadge } from "@/components/Badges";
 import { useAdminStore } from "@/components/AdminStore";
+import {
+  ALL_MODULES,
+  ALL_PERMISSIONS,
+  MAX_GRANTS,
+  countGrants,
+  defaultPermissionsFor,
+} from "@/data/rbac";
+import type {
+  User,
+  UserRole,
+  UserStatus,
+  Permission,
+  ModuleId,
+  ModulePermissions,
+} from "@/types";
 
 const ALL_ROLES: UserRole[] = [
   "Admin",

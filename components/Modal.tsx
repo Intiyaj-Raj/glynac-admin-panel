@@ -2,19 +2,19 @@
 
 import { useEffect } from "react";
 
-// Reusable modal component with backdrop, handles Escape key to close
 export default function Modal({
   open,
   onClose,
   title,
   children,
+  size = "md",
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  size?: "md" | "lg";
 }) {
-  // Close modal when Escape key is pressed
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -31,7 +31,9 @@ export default function Modal({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       {/* Modal content */}
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div
+        className={`relative bg-white rounded-xl shadow-xl w-full ${size === "lg" ? "max-w-2xl" : "max-w-lg"} max-h-[90vh] overflow-y-auto`}
+      >
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
           <button

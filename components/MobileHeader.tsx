@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-// Reusable mobile menu toggle - shows nav links in a dropdown on small screens
 export default function MobileHeader({
   navItems,
 }: {
   navItems: { label: string; href: string }[];
 }) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <div className="md:hidden bg-slate-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-30">
@@ -36,14 +38,18 @@ export default function MobileHeader({
       {open && (
         <nav className="absolute top-full left-0 right-0 bg-slate-900 border-t border-slate-700 flex flex-col py-2">
           {navItems.map((item) => (
-            <a
+            <Link
               key={item.href}
               href={item.href}
-              className="px-6 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white"
+              className={`px-6 py-2.5 text-sm hover:bg-slate-800 hover:text-white ${
+                pathname === item.href
+                  ? "bg-primary-600 text-white"
+                  : "text-slate-300"
+              }`}
               onClick={() => setOpen(false)}
             >
               {item.label}
-            </a>
+            </Link>
           ))}
         </nav>
       )}
